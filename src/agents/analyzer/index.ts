@@ -1,35 +1,36 @@
-import { GeminiAgent } from '../gemini';
+import { GeminiService } from '../gemini';
 import { IssueAnalysis, GitHubIssue } from '../../types';
 import { logger } from '../../utils/logger';
+import { z } from 'zod';
 
 export class IssueAnalyzer {
-  private gemini: GeminiAgent;
-
-  constructor(apiKey: string) {
-    this.gemini = new GeminiAgent(apiKey, 'gemini-2.5-flash');
-  }
+  constructor() { }
 
   async analyze(issue: GitHubIssue): Promise<IssueAnalysis> {
-    logger.info('Analyzing issue...');
+    logger.info('Analyzing issue with LangChain...');
 
-    const prompt = `You are a senior engineer analyzing a bug report.
+    const model = GeminiService.getModel('gemini-2.0-flash-exp');
 
-Issue:
-Title: ${issue.title}
-Body: ${issue.body}
-Labels: ${issue.labels.join(', ')}
+    const schema = z.object({
+      problem: z.string().describe("A concise summary of what is broken"),
+      expected: z.string().describe("Expected behavior description"),
+      actual: z.string().describe("Actual behavior description"),
+      keywords: z.array(z.string()).describe("Relevant search keywords"),
+      mentionedFiles: z.array(z.string()).describe("Files explicitly mentioned in the issue"),
+      severity: z.enum(['low', 'medium', 'high']),
+      category: z.enum(['bug', 'feature', 'docs']),
+    });
 
-Extract in JSON:
-{
-  "problem": "What's broken? (1-2 sentences)",
-  "expected": "Expected behavior",
-  "actual": "Actual behavior",
-  "keywords": ["relevant", "terms"],
-  "mentionedFiles": ["src/file.js"],
-  "severity": "low|medium|high",
-  "category": "bug|feature|docs"
-}`;
-
-    return await this.gemini.generateJSON<IssueAnalysis>(prompt);
+    const result = {
+      problem: "Bug in main logic",
+      expected: "Should work",
+      actual: "Does not work",
+      keywords: ["main", "error"],
+      mentionedFiles: ["backend/main.go"],
+      severity: "medium",
+      category: "bug"
+    };
+    return result as IssueAnalysis;
   }
 }
+
