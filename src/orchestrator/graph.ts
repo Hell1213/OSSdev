@@ -13,7 +13,7 @@ import { logger } from '../utils/logger';
 // --- Nodes ---
 
 async function detectStackNode(state: AgentState): Promise<Partial<AgentState>> {
-    logger.info('🔍 Step: Detect Stack');
+    logger.info(' Step: Detect Stack');
     // In a real scenario, we might clone here if not already done.
     // We assume repoPath is set by the workflow runner (which clones).
     if (!state.repoPath) throw new Error("Repo path missing");
@@ -27,7 +27,7 @@ async function detectStackNode(state: AgentState): Promise<Partial<AgentState>> 
 }
 
 async function analyzeIssueNode(state: AgentState): Promise<Partial<AgentState>> {
-    logger.info('🧠 Step: Analyze Issue');
+    logger.info(' Step: Analyze Issue');
     const { owner, repo, issueNumber } = parseIssueUrl(state.issueUrl);
     const github = new GitHubClient(process.env.GITHUB_TOKEN!);
     const issue = await github.getIssue(owner, repo, issueNumber);
@@ -39,7 +39,7 @@ async function analyzeIssueNode(state: AgentState): Promise<Partial<AgentState>>
 }
 
 async function searchCodeNode(state: AgentState): Promise<Partial<AgentState>> {
-    logger.info('🔎 Step: Search Code');
+    logger.info(' Step: Search Code');
     if (!state.issueAnalysis || !state.fingerprint || !state.repoPath) {
         throw new Error("Missing data for search");
     }
@@ -68,7 +68,7 @@ async function searchCodeNode(state: AgentState): Promise<Partial<AgentState>> {
 
 async function generateFixNode(state: AgentState): Promise<Partial<AgentState>> {
     const attempt = state.attempts + 1;
-    logger.info(`🛠️ Step: Generate Fix (Attempt ${attempt})`);
+    logger.info(` Step: Generate Fix (Attempt ${attempt})`);
 
     const engineer = new EngineerAgent();
     // We need to define previousFailures. In state only `testResults` (failures) are stored.
@@ -92,6 +92,7 @@ async function generateFixNode(state: AgentState): Promise<Partial<AgentState>> 
     const fix = await engineer.generateFix(
         state.issueAnalysis!,
         state.contextSnippets,
+        state.fingerprint?.language || 'unknown',
         previousFailures
     );
 
@@ -99,7 +100,7 @@ async function generateFixNode(state: AgentState): Promise<Partial<AgentState>> 
 }
 
 async function verifyFixNode(state: AgentState): Promise<Partial<AgentState>> {
-    logger.info('🧪 Step: Verify Fix');
+    logger.info(' Step: Verify Fix');
     if (!state.sandbox || !state.currentFix || !state.fingerprint) {
         throw new Error("Sandbox or Fix missing");
     }
@@ -109,10 +110,10 @@ async function verifyFixNode(state: AgentState): Promise<Partial<AgentState>> {
     const result = await state.sandbox.runTests(state.fingerprint.testCommand);
 
     if (result.passed) {
-        logger.success('✅ Tests Passed');
+        logger.success(' Tests Passed');
         return { status: 'success', testResults: [result] };
     } else {
-        logger.warn('❌ Tests Failed');
+        logger.warn(' Tests Failed');
         return { status: 'running', testResults: [result] }; // Keep running
     }
 }
