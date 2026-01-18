@@ -6,7 +6,7 @@ import { z } from 'zod';
 export class ScoutAgent {
   constructor() { }
 
-  async generateSearchQueries(issue: IssueAnalysis, language: string): Promise<SearchQuery[]> {
+  async generateSearchQueries(issue: IssueAnalysis, language: string, projectMap?: string): Promise<SearchQuery[]> {
     logger.info('Generating search queries with LangChain...');
     const model = GeminiService.getModel('gemini-2.0-flash-exp');
 
@@ -21,11 +21,16 @@ export class ScoutAgent {
 
     const structuredModel = model.withStructuredOutput(schema as any);
 
-    const prompt = `Issue Keywords: ${issue.keywords.join(', ')}
-Language: ${language}
-Mentioned Files: ${issue.mentionedFiles.join(', ')}
+    const prompt = `You are a Codebase Scout. Your mission is to find the EXACT files causing the issue.
+    
+Project Structure:
+${projectMap || 'Unknown'}
 
-Generate 3-5 ripgrep queries to find relevant files. Focus on the core problem: ${issue.problem}`;
+Issue Summary: ${issue.problem}
+Keywords: ${issue.keywords.join(', ')}
+Language: ${language}
+
+Based on the file tree above, identify 3-5 high-probability files and generate regex patterns to find the specific buggy logic.`;
 
     try {
       const result = await structuredModel.invoke(prompt);
