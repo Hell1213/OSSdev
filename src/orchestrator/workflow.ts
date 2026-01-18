@@ -16,10 +16,14 @@ export async function runFixWorkflow(
     const { owner, repo } = parseIssueUrl(issueUrl);
     const github = new GitHubClient(process.env.GITHUB_TOKEN!);
 
-    // We clone first to ensure we have the repo for detection.
-    // In the graph, detectStackNode expects repoPath.
-    const repoPath = `/tmp/oss-dev-${Date.now()}`;
-    await github.cloneRepo(owner, repo, repoPath);
+    let repoPath: string;
+    if (options.useLocal) {
+      repoPath = process.cwd();
+      logger.info(`Using local repository at ${repoPath}`);
+    } else {
+      repoPath = `/tmp/oss-dev-${Date.now()}`;
+      await github.cloneRepo(owner, repo, repoPath);
+    }
 
     sandbox = new E2BSandbox();
     // We provision sandbox later? DetectStack needs to happen before provision?
@@ -72,7 +76,11 @@ export async function runFixWorkflow(
     const fingerprint = await detector.detectStack(repoPath);
     logger.info(`Detected Stack: ${fingerprint.language}`);
 
-    await sandbox.provision(`https://github.com/${owner}/${repo}.git`, fingerprint);
+    await sandbox.provision(
+      `https://github.com/${owner}/${repo}.git`,
+      fingerprint,
+      options.useLocal ? repoPath : undefined
+    );
 
     // Now run the graph.
     // Nodes: Analyze -> Search -> Fix -> Verify
@@ -90,6 +98,7 @@ export async function runFixWorkflow(
       attempts: 0,
       maxAttempts: options.maxAttempts,
       sandbox,
+      dryRun: options.dryRun,
       status: 'running'
     };
 
