@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import 'dotenv/config';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { fixCommand } from './commands/fix';
@@ -17,6 +18,7 @@ program
   .option('--dry-run', 'Analyze only, no PR')
   .option('--max-attempts <n>', 'Max fix attempts', '5')
   .option('--verbose', 'Detailed logs')
+  .option('--local', 'Use local repository instead of cloning')
   .action(fixCommand);
 
 try {

@@ -4,7 +4,7 @@ import { runFixWorkflow } from '../../orchestrator/workflow';
 
 export async function fixCommand(
   issueUrl: string,
-  options: { dryRun?: boolean; maxAttempts?: string; verbose?: boolean }
+  options: { dryRun?: boolean; maxAttempts?: string; verbose?: boolean; local?: boolean }
 ): Promise<void> {
   const spinner = ora('Initializing...').start();
 
@@ -18,6 +18,7 @@ export async function fixCommand(
       dryRun: options.dryRun || false,
       maxAttempts: parseInt(options.maxAttempts || '5'),
       verbose: options.verbose || false,
+      useLocal: options.local || false,
     });
 
     if (result.status === 'success') {
