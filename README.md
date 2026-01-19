@@ -1,7 +1,5 @@
 # OSS_dev - Autonomous Open Source Contributor CLI
 
-> **Build like Cursor—powerful, fast, verifiable**
-
 An autonomous CLI tool that acts as an AI-powered open source contributor, automatically analyzing GitHub issues, generating verified fixes through iterative testing, and creating pull requests.
 
 ## 🎯 What It Does
@@ -10,8 +8,6 @@ An autonomous CLI tool that acts as an AI-powered open source contributor, autom
 - ✅ **Searches code surgically** with 90% context reduction
 - ✅ **Self-corrects through test failures** (up to 5 iterations)
 - ✅ **Creates verified PRs automatically**
-
-**Goal:** More powerful than Cursor—we verify, not just suggest.
 
 ## 🚀 Quick Start
 
@@ -43,7 +39,7 @@ npm run build
 npm run dev fix <github-issue-url>
 ```
 
-## 📋 API Keys Setup
+## 📋 API Keys Setup;
 
 The project requires three API keys (already configured in `.env`):
 
