@@ -15,6 +15,13 @@ import { logger } from '../utils/logger';
 
 async function detectStackNode(state: AgentState): Promise<Partial<AgentState>> {
     logger.info(' Step: Detect Stack');
+
+    // If fingerprint already exists (pre-detected by setup), skip re-detection.
+    if (state.fingerprint) {
+        logger.info('Fingerprint already present in state — skipping detectStackNode.');
+        return {};
+    }
+
     // In a real scenario, we might clone here if not already done.
     // We assume repoPath is set by the workflow runner (which clones).
     if (!state.repoPath) throw new Error("Repo path missing");
