@@ -20,7 +20,7 @@ export class EngineerAgent {
       explanation: z.string().describe("Brief explanation of the fix"),
     });
 
-    const structuredModel = model.withStructuredOutput(schema as any);
+    const structuredModel = model.withStructuredOutput(schema as any, { includeRaw: true } as any);
 
     const prompt = `You are a Senior Principal Engineer. You solve complex bugs with minimal side effects.
     
@@ -44,10 +44,19 @@ Generate the final FIXED code.
 - Ensure the fix is robust.`;
 
     try {
-      const result = await structuredModel.invoke(prompt);
+      const { parsed, raw } = await structuredModel.invoke(prompt) as any;
+
+      if (raw.usage_metadata) {
+        GeminiService.trackUsage(
+          'gemini-2.0-flash-exp',
+          raw.usage_metadata.prompt_token_count || 0,
+          raw.usage_metadata.candidates_token_count || 0
+        );
+      }
+
       return {
-        file: result.file,
-        content: result.content,
+        file: parsed.file,
+        content: parsed.content,
       };
     } catch (e) {
       logger.warn('API for fix generation failed, using fallback...');

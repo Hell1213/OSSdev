@@ -24,7 +24,7 @@ export class ReviewerAgent {
             category: z.enum(['logic', 'syntax', 'style', 'security', 'ok']).describe("The main concern if any")
         });
 
-        const structuredModel = model.withStructuredOutput(schema as any);
+        const structuredModel = model.withStructuredOutput(schema as any, { includeRaw: true } as any);
 
         const originalCode = snippets.find(s => s.file === fix.file)?.content || "File not found in context";
 
@@ -48,8 +48,15 @@ Review the fix. Reject it if:
 If approved, set approved=true. Otherwise set false and provide feedback.`;
 
         try {
-            const result = await structuredModel.invoke(prompt) as any as ReviewResult;
-            return result;
+            const { parsed, raw } = await structuredModel.invoke(prompt) as any;
+            if (raw.usage_metadata) {
+                GeminiService.trackUsage(
+                    'gemini-2.0-flash-exp',
+                    raw.usage_metadata.prompt_token_count || 0,
+                    raw.usage_metadata.candidates_token_count || 0
+                );
+            }
+            return parsed as ReviewResult;
         } catch (e: any) {
             logger.warn(`Reviewer API failed: ${e.message}. Defaulting to approved for continuity.`);
             return {

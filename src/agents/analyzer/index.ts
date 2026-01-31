@@ -22,7 +22,7 @@ export class IssueAnalyzer {
       isFrontend: z.boolean().describe("Whether this issue primarily involves frontend code (CSS, React, UI)"),
     });
 
-    const structuredModel = model.withStructuredOutput(schema as any);
+    const structuredModel = model.withStructuredOutput(schema as any, { includeRaw: true } as any);
 
     const prompt = `You are a Senior Principal Engineer. Analyze this bug report deeply.
     
@@ -36,14 +36,21 @@ Labels: ${issue.labels.join(', ')}
 3. Extract relevant files and keywords for searching.`;
 
     try {
-      const result = await structuredModel.invoke(prompt) as any;
+      const { parsed, raw } = await structuredModel.invoke(prompt) as any;
+      if (raw.usage_metadata) {
+        GeminiService.trackUsage(
+          'gemini-2.0-flash-exp',
+          raw.usage_metadata.prompt_token_count || 0,
+          raw.usage_metadata.candidates_token_count || 0
+        );
+      }
       return {
-        ...result,
+        ...parsed,
         labels: issue.labels
       };
     } catch (e) {
       logger.warn('API for issue analysis failed, using fallback...');
-      const isFrontend = issue.labels.some(l => l.toLowerCase().includes('frontend') || l.toLowerCase().includes('ui') || l.toLowerCase().includes('css'));
+      const isFrontend = issue.labels.some((l: string) => l.toLowerCase().includes('frontend') || l.toLowerCase().includes('ui') || l.toLowerCase().includes('css'));
       return {
         problem: issue.title,
         expected: "Functionality working correctly",
