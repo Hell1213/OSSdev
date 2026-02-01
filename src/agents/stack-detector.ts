@@ -3,6 +3,7 @@ import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
 import { RepoFingerprint } from '../types';
+import { GeminiService } from './gemini';
 
 export class StackDetectorAgent {
     private model: ChatGoogleGenerativeAI;
@@ -40,7 +41,7 @@ export class StackDetectorAgent {
             dependencies: z.array(z.string()).describe("Key dependencies found in config files (e.g. react, lodash, express)")
         });
 
-        const structuredModel = this.model.withStructuredOutput(schema as any);
+        const structuredModel = this.model.withStructuredOutput(schema as any, { includeRaw: true } as any);
 
         const prompt = `You are a Senior Principal Engineer performing an environment audit.
         
@@ -55,8 +56,15 @@ For the runtime, use 'base' if it's a standard linux environment or a specific o
 Audit the dependencies carefully to ensure the sandbox setup will be successful.`;
 
         try {
-            const result = await structuredModel.invoke(prompt);
-            return result as RepoFingerprint;
+            const { parsed, raw } = await structuredModel.invoke(prompt) as any;
+            if (raw.usage_metadata) {
+                GeminiService.trackUsage(
+                    'gemini-2.0-flash-exp',
+                    raw.usage_metadata.prompt_token_count || 0,
+                    raw.usage_metadata.candidates_token_count || 0
+                );
+            }
+            return parsed as RepoFingerprint;
         } catch (e) {
             console.warn('API for stack detection failed, using local fallback...');
             // Fallback logic - Prioritize Python for projects that have both (like Zulip)

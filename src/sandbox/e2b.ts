@@ -105,6 +105,11 @@ export class E2BSandbox {
     return await this.sandbox.files.read(filePath);
   }
 
+  async readFile(filePath: string): Promise<string> {
+    if (!this.sandbox) throw new Error('Sandbox not initialized');
+    return await this.sandbox.files.read(filePath);
+  }
+
   async runTests(testCommand: string): Promise<TestResult> {
     if (!this.sandbox) throw new Error('Sandbox not initialized');
 
